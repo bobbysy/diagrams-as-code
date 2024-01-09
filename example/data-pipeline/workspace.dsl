@@ -7,7 +7,7 @@ workspace {
 
         softwareSystem = softwareSystem "Audio Pipeline"{
 
-            webapp = container "Audio Input" {
+            datasource = container "Audio Input" {
                 tags "Data Connector"
             }
 
@@ -15,90 +15,101 @@ workspace {
                 service1aApi = container "Voice activity detection (VAD)" "Detection of the presence or absence of human speech" {
                     tags "Service 1" "Component"
                 }
-                service1bApi = container "Diarization" "Partitioning an audio stream containing human speech into homogeneous segments according to the identity of each speaker" {
+
+                service1bApi = container "Speech enhancement (SE)" "" {
                     tags "Service 1" "Component"
-                    service1aApi -> this "Reads from and writes to"
+                    service1aApi -> this ""
                 }
 
-                service1cApi = container "Language Identification (LID)" "Identification of spoken language" {
+                service1cApi = container "Diarization" "Partitioning an audio stream containing human speech into homogeneous segments according to the identity of each speaker" {
                     tags "Service 1" "Component"
-                    service1bApi -> this "Reads from and writes to"
+                    service1bApi -> this ""
+                }
+
+                service1dApi = container "Language Identification (LID)" "Identification of spoken language" {
+                    tags "Service 1" "Component"
+                    service1cApi -> this ""
+                }
+
+                service1eApi = container "Speech Separation" "" {
+                    tags "Service 1" "Component"
+                    service1dApi -> this ""
+                }
+
+                service1fApi = container "Code Switch" "" {
+                    tags "Service 1" "Component"
+                    service1eApi -> this ""
                 }
             }
 
             service2 = group "Speech Application" {
-                service2Api = container "speaker identification" "Identification of speaker" {
+                service2aApi = container "Speaker Identification" "Identification of speaker" {
                     tags "Service 2" "Component"
+                }
+                
+                service2bApi = container "Keyword Spotting" "" {
+                    tags "Service 2" "Component"
+                    service2aApi -> this ""
+                }
+
+                service2cApi = container "Speech To Text (STT)" "" {
+                    tags "Service 2" "Component"
+                    service2bApi -> this ""
+                }
+
+                service2dApi = container "Machine Translation" "" {
+                    tags "Service 2" "Component"
+                    service2cApi -> this ""
                 }
             }
 
             service3 = group "Monitoring" {
-                service3Api = container "Out-of-vocabulary (OOV)" {
+                service3aApi = container "Out-of-vocabulary (OOV)" {
                     tags "Service 3" "Component"
                 }
-            }
 
-            service4 = group "Service 4" {
-                service4Api = container "Service 4 API" {
-                    tags "Service 4" "Service API"
+                service3bApi = container "Context Change" {
+                    tags "Service 3" "Component"
+                    service3aApi -> this ""
                 }
-                container "Service 4 Database" {
-                    tags "Service 4" "Database"
-                    service4Api -> this "Reads from and writes to"
-                }
-            }
 
-            service5 = group "Service 5" {
-                service5Api = container "Service 5 API" {
-                    tags "Service 5" "Service API"
-                }
-                container "Service 5 Database" {
-                    tags "Service 5" "Database"
-                    service5Api -> this "Reads from and writes to"
+                service3cApi = container "Acoustic Mismatch" {
+                    tags "Service 3" "Component"
+                    service3bApi -> this ""
                 }
             }
 
-            service6 = group "Service 6" {
-                service6Api = container "Service 6 API" {
-                    tags "Service 6" "Service API"
+            service4 = group "Retraining" {
+                service4aApi = container "Data Cartography" {
+                    tags "Service 4" "Component"
                 }
-                container "Service 6 Database" {
-                    tags "Service 6" "Database"
-                    service6Api -> this "Reads from and writes to"
-                }
-            }
-
-            service7 = group "Service 7" {
-                service7Api = container "Service 7 API" {
-                    tags "Service 7" "Service API"
-                }
-                container "Service 7 Database" {
-                    tags "Service 7" "Database"
-                    service7Api -> this "Reads from and writes to"
+                service4bApi = container "Performance Verification" {
+                    tags "Service 4" "Component"
+                    service4aApi -> this ""
                 }
             }
 
-            service8 = group "Service 8" {
-                service8Api = container "Service 8 API" {
-                    tags "Service 8" "Service API"
-                }
-                container "Service 8 Database" {
-                    tags "Service 8" "Database"
-                    service8Api -> this "Reads from and writes to"
+            service5 = group "Model Repository" {
+                service5Api = container "Model Registry" {
+                    tags "Service 5" "Database" "Data Connector"
                 }
             }
 
-            user -> webapp
-            webapp -> service1aApi
-            service1cApi -> service2Api
-            service1cApi -> service3Api
-            service2Api -> service3Api
-            service2Api -> service5Api
-            webapp -> service3Api
-            service3Api -> service4Api
-            service3Api -> service7Api
-            service4Api -> service6Api
-            service7Api -> service8Api
+            service6 = group "Storage" {
+                service6Api = container "Data Storage" {
+                    tags "Service 6" "Database" "Data Connector"
+                }
+            }
+
+            user -> datasource
+            datasource -> service1aApi
+            service1fApi -> service2aApi
+            service1fApi -> service6Api
+            service2dApi -> service3aApi
+            service2dApi -> service6Api
+            service3cApi -> service4aApi
+            service4bApi -> service5Api "Writes to"
+            service5Api -> service2aApi "Reads from"
         }
 
     }
@@ -106,7 +117,7 @@ workspace {
     views {
         container softwareSystem "Containers_All" {
             include *
-            autolayout
+            autolayout lr
         }
 
         container softwareSystem "Containers_Service1" {
@@ -124,17 +135,32 @@ workspace {
             autolayout
         }
 
+        container softwareSystem "Containers_Service4" {
+            include ->softwareSystem.service4->
+            autolayout
+        }
+
+        container softwareSystem "Containers_Service5" {
+            include ->softwareSystem.service4->
+            autolayout
+        }
+
+        container softwareSystem "Containers_Service6" {
+            include ->softwareSystem.service4->
+            autolayout
+        }
+
         styles {
             element "Person" {
                 shape Person
             }
-            element "Service API 1" {
+            element "Data Connector" {
                 shape hexagon
             }
             element "Database" {
                 shape cylinder
             }
-            element "Audio Speech Recognition" {
+            element "Service 1" {
                 background #91F0AE
             }
             element "Service 2" {
@@ -151,12 +177,6 @@ workspace {
             }
             element "Service 6" {
                 background #DD8BFE
-            }
-            element "Service 7" {
-                background #89ACFF
-            }
-            element "Service 8" {
-                background #FDA9F4
             }
 
         }
