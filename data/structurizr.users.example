@@ -1,2 +1,0 @@
-# calculate a bcrypt hashed password at {structurizr.url}/bcrypt/{password}
-{username}={hashed password}

@@ -1,0 +1,45 @@
+{
+    "name" : "Name",
+    "description" : "Description",
+    "elements" : [ {
+      "tag" : "Person",
+      "color" : "#ffffff",
+      "fontSize" : 22,
+      "shape" : "Person"
+    }, {
+      "tag" : "User",
+      "background" : "#08427b"
+    }, {
+      "tag" : "GAIA",
+      "background" : "#1168bd",
+      "color" : "#ffffff"
+    }, {
+      "tag" : "Container",
+      "background" : "#438dd5",
+      "color" : "#ffffff"
+    }, {
+      "tag" : "Database",
+      "shape" : "Cylinder"
+    }, {
+      "tag" : "Web Browser",
+      "shape" : "WebBrowser"
+    }, {
+      "tag" : "Virtual Machine",
+      "background" : "#3c7ebf",
+      "color" : "#000000"
+    }, {
+      "tag" : "Physical Machine",
+      "background" : "#a1c6ea",
+      "color" : "#000000"
+    }, {
+      "tag" : "Group:GAIA Scope",
+      "background" : "#00ff00",
+      "strokeWidth" : 3,
+      "color" : "#000000"
+    }, {
+      "tag" : "Group:GAIA Scope/Audit Scope",
+      "background" : "#cc0000",
+      "strokeWidth" : 3,
+      "color" : "#000000"
+    } ]
+  }

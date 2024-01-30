@@ -46,7 +46,7 @@ workspace {
                 service2aApi = container "Speaker Identification" "Identification of speaker" {
                     tags "Service 2" "Component"
                 }
-                
+
                 service2bApi = container "Keyword Spotting" "" {
                     tags "Service 2" "Component"
                     service2aApi -> this ""

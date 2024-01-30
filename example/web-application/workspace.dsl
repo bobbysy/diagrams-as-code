@@ -1,34 +1,169 @@
-workspace {
+#using https://structurizr.com/dsl
+workspace "GAIA-Workspace" {
 
     model {
-        u = person "User"
+        properties {
+            "structurizr.groupSeparator" "/"
+        }
+        user = person "User" "" "User"
 
-        s = softwareSystem "Software System" {
-            haproxy = container "HAProxy" "" "HAProxy"
-            frontend = container "React Frontend" "" "Nginx"
-            backend = container "Node Backend" "" "Node"
-            pdfParser = container "PDF Parser" "" "Python3.8"
-            semanticsManager = container "Semantics Manager" "" "Python3.8"
-            database = container "Database" "" "Relational database schema"
+        gaiaSystem = softwareSystem "GAIA" {
+            haproxy = container "HAProxy" {
+                description "Reverse Proxy"
+                tags "HAProxy" "HAProxy 2.4.22"
+            }
+            frontend = container "React Frontend" {
+                description "Static Frontend"
+                tags "Nginx" "Web Browser" "Node 18.18.2" "Nginx 1.25.3"
+            }
+            backend = container "Node Backend" {
+                description "Backend Web Application"
+                tags "Node" "Node 18.18.2"
+            }
+                pdfParser = container "PDF Parser" {
+                description "PDF Parser"
+                tags "Python" "Python 3.8.16"
+            }
+            semanticsManager = container "Semantics Manager" {
+                description "Weaviate Python Client"
+                tags "Python" "Python 3.8.16" "sentence-transformers/all-mpnet-base-v2"
+            }
+            mongodb = container "MongoDB"  {
+                description "NoSQL database. Stores context documents, inference logs, feedback and latest chat"
+                tags "MongoDB" "Database" "MongoDB 6.0.5"
+            }
+            scylladb = container "ScyllaDB"  {
+                description "NoSQL wide-column data store. Stores chat history"
+                tags "ScyllaDB" "Database" "ScyllaDB 5.2"
+            }
+            weaviate = container "Weaviate"  {
+                description "Vector Database. Stores vector embeddings"
+                tags "Weaviate" "Database" "Weaviate 1.22.5"
+            }
+            vllm = container "vLLM" {
+                description "Library for LLM inference and serving"
+                tags "Python" "Python 3.8.16" "meta-llama/Llama-2-13b"
+            }
+
+            monitoringGroup = group "Monitoring Compontents" {
+                prometheus = container "Prometheus" {
+                    description "Open-source systems monitoring and alerting toolkit"
+                    tags "Prometheus" "Prometheus 2.48.0"
+                }
+                grafana = container "Grafana" {
+                    description "Open-source platform for data visualization and monitoring"
+                    tags "Grafana" "Web Browser" "Grafana 10.2.2"
+                }
+                loki = container "Loki" {
+                    description "Log aggregation system"
+                    tags "Loki" "Loki 2.9.2"
+                }
+            }
+            logsCollector = group "Logs Collector" {
+                cadvisor = container "cAdvisor" {
+                    description "Open-source tool to monitor containers"
+                    tags "Red Hat Universal Base Image" "Red Hat Universal Base Image 8 (ubi8)" "CAdvisor 0.47.2"
+                }
+                nodeExporter = container "Node exporter" {
+                    description "Prometheus exporter for hardware and OS metrics"
+                    tags "Node-exporter" "Node-exporter 1.7.0"
+                }
+                promtail = container "Promtail" {
+                    description "Collect and ship log data to Loki"
+                    tags "Promtail" "Promtail 2.9.2"
+                }
+            }
         }
 
-        u -> frontend "Uses"
-        frontend -> backend "Send to and receive from"
-        backend -> pdfParser "Upload PDF"
-        pdfParser -> database "Writes to"
-        backend -> database "Reads from and writes to"
+        # relationships between people and software systems
+        user -> gaiaSystem "Provide texts or documents, and ask any question about the data"
 
-        live = deploymentEnvironment "On Prem" {
+        # relationships to/from containers
+        user -> haproxy "Visits GAIA using" "HTTPS"
+        haproxy -> frontend "Send to and receive from" "JSON/HTTP"
+        frontend -> backend "Send to and receive from" "JSON/HTTP"
+        backend -> pdfParser "Send to and receive from" "JSON/HTTP"
+        backend -> mongodb "Reads from and writes to" "JSON/HTTP"
+        backend -> scylladb "Reads from and writes to" "JSON/HTTP"
+        backend -> semanticsManager "Send to and receive from" "JSON/HTTP"
+        semanticsManager -> weaviate "Reads from and writes to" "JSON/HTTP"
+        backend -> vllm "Send to and receive from" "JSON/HTTP"
 
-            deploymentNode "Amazon Web Services" {
+        nodeExporter ->  prometheus "Collect and ship metrics to" "JSON/HTTP"
+        promtail -> loki "Collect and ship logs to" "JSON/HTTP"
+
+        cadvisor -> grafana "Fetches from" "JSON/HTTP"
+        prometheus -> grafana "Fetches from" "JSON/HTTP"
+        loki -> grafana "Fetches from" "JSON/HTTP"
+
+        systemDiagram = deploymentEnvironment "System Diagram" {
+            deploymentNode "Production Zone" {
+                client = infrastructureNode "Client"
+                gaiaScope = group "GAIA Scope" {
+                    gaiaGPU = infrastructureNode "GPU Machine"
+                    group "Audit Scope" {
+                        gaiaVM1 = infrastructureNode "Web App VM" {
+                            tags "Virtual Machine"
+                        }
+                        gaiaVM2 = infrastructureNode "Backend VM" {
+                            tags "Virtual Machine"
+                        }
+                        gaiaVM3 = infrastructureNode "Database VM" {
+                            tags "Virtual Machine"
+                        }
+                        gaiaVM1 -> gaiaVM2
+                        gaiaVM2 -> gaiaVM3
+                    }
+                    gaiaVM2 -> gaiaGPU
+                }
+                client -> gaiaVM1
+            }
+        }
+
+        networkDiagram = deploymentEnvironment "Network Diagram" {
+            deploymentNode "Production Zone" {
+                physicalSwitch = infrastructureNode "Switch"
+                group "GAIA Network" {
+                    vm1 = infrastructureNode "Web App VM" {
+                        tags "Virtual Machine"
+                    }
+                    vm2 = infrastructureNode "Backend VM" {
+                        tags "Virtual Machine"
+                    }
+                    vm3 = infrastructureNode "Database VM" {
+                        tags "Virtual Machine"
+                    }
+                    gpuMachine = infrastructureNode "GPU Machine" {
+                        tags "Physical Machine"
+                    }
+                }
+
+                group "Maintenance Network" {
+                    vm4 = infrastructureNode "Patch VM" {
+                        tags "Virtual Machine"
+                    }
+                }
+                vm1 -> physicalSwitch
+                vm2 -> physicalSwitch
+                vm3 -> physicalSwitch
+                gpuMachine -> physicalSwitch
+                vm4 -> physicalSwitch
+            }
+        }
+
+        production = deploymentEnvironment "On Prem" {
+            deploymentNode "On-Premise Data Center" {
                 reverseProxy = infrastructureNode "F5 Reverse Proxy"
-
                 deploymentNode "Zone 1" {
                     deploymentNode "Web Tier" {
                         deploymentNode "Virtual Machine" {
                             deploymentNode "Ubuntu Server" {
                                 haproxyContainer = containerInstance haproxy
-                                frontendContainer = containerInstance frontend
+                                containerInstance frontend
+                                group "Log Collector" {
+                                    containerInstance cadvisor
+                                    containerInstance nodeExporter
+                                }
                             }
                         }
                     }
@@ -36,37 +171,122 @@ workspace {
                     deploymentNode "Business Tier" {
                         deploymentNode "Virtual Machine" {
                             deploymentNode "Ubuntu Server" {
-                                backend1Container = containerInstance backend
-                                backend2Container = containerInstance backend
-                                backend3Container = containerInstance backend
+                                containerInstance backend
+                                containerInstance backend
+                                containerInstance backend
+                                containerInstance semanticsManager
+                                group "Monitoring" {
+                                    containerInstance prometheus
+                                    containerInstance grafana
+                                    containerInstance loki
+                                }
+                                group "Log Collector" {
+                                    containerInstance cadvisor
+                                    containerInstance nodeExporter
+                                }
+                            }
+                        }
+                        deploymentNode "GPU Machine" {
+                            deploymentNode "Ubuntu Server" {
+                                containerInstance vllm
                             }
                         }
                     }
 
-
-
-                    deploymentNode "Amazon RDS" {
-                        deploymentNode "MySQL" {
-                            containerInstance database
+                    deploymentNode "Database Tier" {
+                        deploymentNode "Virtual Machine" {
+                            deploymentNode "Ubuntu Server" {
+                                containerInstance mongodb
+                                containerInstance scylladb
+                                containerInstance weaviate
+                                group "Log Collector" {
+                                    containerInstance cadvisor
+                                    containerInstance nodeExporter
+                                }
+                            }
                         }
                     }
                 }
             }
-
             reverseProxy -> haproxyContainer "Forward requests to" "HTTPS"
-
         }
     }
 
     views {
-        container s {
+        systemLandscape techStack {
             include *
             autoLayout
         }
-        deployment s live {
+
+        systemcontext gaiaSystem {
             include *
             autoLayout
+        }
+        container gaiaSystem {
+            include *
+            autoLayout
+        }
+        deployment gaiaSystem production {
+            include *
+            autoLayout
+        }
+        deployment gaiaSystem networkDiagram {
+            include *
+            autoLayout
+        }
+        deployment gaiaSystem systemDiagram {
+            include *
+            autoLayout
+        }
+        styles {
+            element "Person" {
+                color #ffffff
+                fontSize 22
+                shape Person
+            }
+            element "User" {
+                background #08427b
+            }
+
+            element "GAIA" {
+                background #1168bd
+                color #ffffff
+            }
+
+            element "Container" {
+                background #438dd5
+                color #ffffff
+                metadata true
+            }
+
+            element "Database" {
+                shape Cylinder
+            }
+
+            element "Web Browser" {
+                shape WebBrowser
+            }
+
+            element "Virtual Machine" {
+                color #000000
+                background #3c7ebf
+            }
+
+            element "Physical Machine" {
+                color #000000
+                background #a1c6ea
+            }
+
+            element "Group:GAIA Scope" {
+                color #000000
+                background #00ff00
+                strokeWidth 3
+            }
+            element "Group:GAIA Scope/Audit Scope" {
+                color #000000
+                background #cc0000
+                strokeWidth 3
+            }
         }
     }
-
 }
