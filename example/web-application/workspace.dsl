@@ -100,7 +100,9 @@ workspace "GAIA-Workspace" {
             deploymentNode "Production Zone" {
                 client = infrastructureNode "Client"
                 gaiaScope = group "GAIA Scope" {
-                    gaiaGPU = infrastructureNode "GPU Machine"
+                    gaiaGPU = infrastructureNode "GPU Machine" {
+                        tags "Physical"
+                    }
                     group "Audit Scope" {
                         gaiaVM1 = infrastructureNode "Web App VM" {
                             tags "Virtual Machine"
@@ -122,7 +124,9 @@ workspace "GAIA-Workspace" {
 
         networkDiagram = deploymentEnvironment "Network Diagram" {
             deploymentNode "Production Zone" {
-                physicalSwitch = infrastructureNode "Switch"
+                physicalSwitch = infrastructureNode "Switch" {
+                    tags "Physical"
+                }
                 group "GAIA Network" {
                     vm1 = infrastructureNode "Web App VM" {
                         tags "Virtual Machine"
@@ -153,16 +157,19 @@ workspace "GAIA-Workspace" {
 
         production = deploymentEnvironment "On Prem" {
             deploymentNode "On-Premise Data Center" {
-                reverseProxy = infrastructureNode "F5 Reverse Proxy"
+                reverseProxy = infrastructureNode "F5 Reverse Proxy" {
+                    tags "Physical"
+                }
                 deploymentNode "Zone 1" {
                     deploymentNode "Web Tier" {
                         deploymentNode "Virtual Machine" {
                             deploymentNode "Ubuntu Server" {
                                 haproxyContainer = containerInstance haproxy
                                 containerInstance frontend
-                                group "Log Collector" {
+                                webLogCollector = group "Log Collector" {
                                     containerInstance cadvisor
                                     containerInstance nodeExporter
+                                    containerInstance promtail
                                 }
                             }
                         }
@@ -172,8 +179,8 @@ workspace "GAIA-Workspace" {
                         deploymentNode "Virtual Machine" {
                             deploymentNode "Ubuntu Server" {
                                 containerInstance backend
-                                containerInstance backend
-                                containerInstance backend
+                                backend2 = containerInstance backend
+                                backend3 = containerInstance backend
                                 containerInstance semanticsManager
                                 group "Monitoring" {
                                     containerInstance prometheus
@@ -183,6 +190,7 @@ workspace "GAIA-Workspace" {
                                 group "Log Collector" {
                                     containerInstance cadvisor
                                     containerInstance nodeExporter
+                                    containerInstance promtail
                                 }
                             }
                         }
@@ -199,9 +207,10 @@ workspace "GAIA-Workspace" {
                                 containerInstance mongodb
                                 containerInstance scylladb
                                 containerInstance weaviate
-                                group "Log Collector" {
+                                databaseLogCollector = group "Log Collector" {
                                     containerInstance cadvisor
                                     containerInstance nodeExporter
+                                    containerInstance promtail
                                 }
                             }
                         }
@@ -228,6 +237,10 @@ workspace "GAIA-Workspace" {
         }
         deployment gaiaSystem production {
             include *
+            exclude webLogCollector->*
+            exclude databaseLogCollector->*
+            exclude backend2
+            exclude backend3
             autoLayout
         }
         deployment gaiaSystem networkDiagram {
@@ -247,36 +260,32 @@ workspace "GAIA-Workspace" {
             element "User" {
                 background #08427b
             }
-
             element "GAIA" {
                 background #1168bd
                 color #ffffff
             }
-
             element "Container" {
                 background #438dd5
                 color #ffffff
-                metadata true
+                
             }
-
             element "Database" {
                 shape Cylinder
             }
-
             element "Web Browser" {
                 shape WebBrowser
             }
-
             element "Virtual Machine" {
                 color #000000
                 background #3c7ebf
             }
-
             element "Physical Machine" {
                 color #000000
                 background #a1c6ea
             }
-
+            element "Physical" {
+                color #000000
+            }
             element "Group:GAIA Scope" {
                 color #000000
                 background #00ff00
